@@ -1,6 +1,6 @@
 # AutoMLify
 
-![AutoMLify Logo](images/your_logo.png)  <!-- Replace with your logo image path -->
+![AutoMLify Logo](automlify.jpg)  <!-- Replace with your logo image path -->
 
 ## Overview
 
