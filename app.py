@@ -44,6 +44,8 @@ with st.sidebar:
 
 if os.path.exists("source_data.csv"):
     df = pd.read_csv("source_data.csv", index_col=None)
+else:
+    df = None  # Handle case where dataset is not uploaded
 
 
 if st.session_state.choice == "Upload Dataset":
@@ -67,57 +69,72 @@ if st.session_state.choice == "Upload Dataset":
 
 if st.session_state.choice == "Profiling Data":
     st.header("📊 Automated Data Profiling Report")
-    st.subheader("Get insights into your dataset with our automated profiling tools.")
-    if st.button("🔍 Start Analysis..."):
-        # with st.spinner("Generating the profiling report... Please wait!"):
-        profile_report = ProfileReport(
-            df,
-            title="Pandas Profiling Report",
-            explorative=True,
+
+    # Check if the dataset is available
+    if df is None:
+        st.error(
+            "⚠️ No dataset found. Please upload a dataset first in the **Upload Dataset** section."
         )
-        st_profile_report(profile_report)
-        st.success("The profiling report has been generated successfully!")
+    else:
+        st.subheader(
+            "Get insights into your dataset with our automated profiling tools."
+        )
+        if st.button("🔍 Start Analysis..."):
+            # with st.spinner("Generating the profiling report... Please wait!"):
+            profile_report = ProfileReport(
+                df,
+                title="Pandas Profiling Report",
+                explorative=True,
+            )
+            st_profile_report(profile_report)
+            st.success("The profiling report has been generated successfully!")
 
 
 if st.session_state.choice == "ML Training":
-    global best_model
-    global target
     st.header("🤖 ML Model Training")
-    st.info(
-        "Select your target variable and choose from multiple training options for your models."
-    )
-    target = st.selectbox("Select Your Target Variable", df.columns)
 
-    # Store the target in session state
-    st.session_state["target"] = target
+    # Check if the dataset is available
+    if df is None:
+        st.error(
+            "⚠️ No dataset found. Please upload a dataset first in the **Upload Dataset** section."
+        )
+    else:
+        st.info(
+            "Select your target variable and choose from multiple training options for your models."
+        )
 
-    if st.button("Train All Models"):
-        with st.spinner(
-            "🚀 Training All Models... Please be patient as we work on optimizing your machine learning models!"
-        ):
-            setup(df, target=target, verbose=False)
-            setup_df = pull()
+        target = st.selectbox("Select Your Target Variable", df.columns)
 
-            # Display setup information
-            st.subheader("Setup Summary:")
-            st.dataframe(setup_df)
+        # Store the target in session state
+        st.session_state["target"] = target
 
-            # Compare models and display the results
-            best_model = compare_models()
-            compare_df = pull()
+        if st.button("Train All Models"):
+            with st.spinner(
+                "🚀 Training All Models... Please be patient as we work on optimizing your machine learning models!"
+            ):
+                setup(df, target=target, verbose=False)
+                setup_df = pull()
 
-            # Store the best model in session state
-            st.session_state["best_model"] = best_model
+                # Display setup information
+                st.subheader("Setup Summary:")
+                st.dataframe(setup_df)
 
-            st.subheader("Comparison of Models:")
-            st.dataframe(compare_df)
+                # Compare models and display the results
+                best_model = compare_models()
+                compare_df = pull()
 
-            st.success(
-                "✅ All models have been trained successfully! The best performing model has been saved. "
-                "You can proceed to the **Download Model** section to download it."
-            )
+                # Store the best model in session state
+                st.session_state["best_model"] = best_model
 
-            save_model(best_model, "best_model")
+                st.subheader("Comparison of Models:")
+                st.dataframe(compare_df)
+
+                st.success(
+                    "✅ All models have been trained successfully! The best performing model has been saved. "
+                    "You can proceed to the **Download Model** section to download it."
+                )
+
+                save_model(best_model, "best_model")
 
 
 if st.session_state.choice == "Prediction":
