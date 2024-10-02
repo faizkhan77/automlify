@@ -37,6 +37,8 @@ AutoMLify is built using the following technologies:
 
 ## Installation
 
+**Important:** Please use Python 3.10 or below, as newer versions of Python may lead to version mismatches with Streamlit and PyCaret, which currently work only up to Python 3.10 or 3.11.
+
 To get started with AutoMLify, follow these simple steps:
 
 1. **Clone the repository**:
