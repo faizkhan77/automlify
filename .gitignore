@@ -1,0 +1,13 @@
+myvenv/
+__pycache__/
+*.pyc
+
+*.log
+
+best_model.pkl
+
+finalized_model.pkl
+
+source_data.csv
+
+video.MP4
