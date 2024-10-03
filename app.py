@@ -42,10 +42,15 @@ with st.sidebar:
         "Welcome to AutoMLify! This app automates machine learning tasks such as data profiling, preprocessing, model training, and evaluation using PyCaret. Easily upload your dataset, explore its structure, train multiple models, and download the results."
     )
 
-if os.path.exists("source_data.csv"):
-    df = pd.read_csv("source_data.csv", index_col=None)
-else:
-    df = None  # Handle case where dataset is not uploaded
+# if os.path.exists("source_data.csv"):
+#     df = pd.read_csv("source_data.csv", index_col=None)
+# else:
+#     df = None  # Handle case where dataset is not uploaded
+
+
+# Initialize session state for dataset if not already set
+if "df" not in st.session_state:
+    st.session_state.df = None  # Initialize with None
 
 
 if st.session_state.choice == "Upload Dataset":
@@ -53,13 +58,15 @@ if st.session_state.choice == "Upload Dataset":
     st.markdown("### Welcome! Please upload your dataset to get started.")
     dataset = st.file_uploader("Upload your Dataset here", type=["csv"])
     if dataset:
-        df = pd.read_csv(dataset, index_col=None)
-        df.to_csv("source_data.csv", index=None)
+        st.session_state.df = pd.read_csv(
+            dataset, index_col=None
+        )  # Store dataset in session state
+        # df.to_csv("source_data.csv", index=None)
 
         st.success(f"✅ Your file has been uploaded and saved!")
 
         st.subheader("🔍 Dataset Preview")
-        st.dataframe(df)
+        st.dataframe(st.session_state.df)
 
         st.markdown("### Next Steps:")
         st.write("Now that you've uploaded your dataset, you can:")
@@ -71,7 +78,7 @@ if st.session_state.choice == "Profiling Data":
     st.header("📊 Automated Data Profiling Report")
 
     # Check if the dataset is available
-    if df is None:
+    if st.session_state.df is None:
         st.error(
             "⚠️ No dataset found. Please upload a dataset first in the **Upload Dataset** section."
         )
@@ -82,7 +89,7 @@ if st.session_state.choice == "Profiling Data":
         if st.button("🔍 Start Analysis..."):
             # with st.spinner("Generating the profiling report... Please wait!"):
             profile_report = ProfileReport(
-                df,
+                st.session_state.df,
                 title="Pandas Profiling Report",
                 explorative=True,
             )
@@ -94,7 +101,7 @@ if st.session_state.choice == "ML Training":
     st.header("🤖 ML Model Training")
 
     # Check if the dataset is available
-    if df is None:
+    if st.session_state.df is None:
         st.error(
             "⚠️ No dataset found. Please upload a dataset first in the **Upload Dataset** section."
         )
@@ -103,7 +110,9 @@ if st.session_state.choice == "ML Training":
             "Select your target variable and choose from multiple training options for your models."
         )
 
-        target = st.selectbox("Select Your Target Variable", df.columns)
+        target = st.selectbox(
+            "Select Your Target Variable", st.session_state.df.columns
+        )
 
         # Store the target in session state
         st.session_state["target"] = target
@@ -112,7 +121,7 @@ if st.session_state.choice == "ML Training":
             with st.spinner(
                 "🚀 Training All Models... Please be patient as we work on optimizing your machine learning models!"
             ):
-                setup(df, target=target, verbose=False)
+                setup(st.session_state.df, target=target, verbose=False)
                 setup_df = pull()
 
                 # Display setup information
@@ -135,6 +144,11 @@ if st.session_state.choice == "ML Training":
                 )
 
                 save_model(best_model, "best_model")
+
+
+# Initialize session state for test dataset if not already set
+if "df_test" not in st.session_state:
+    st.session_state.df_test = None  # Initialize with None
 
 
 if st.session_state.choice == "Prediction":
@@ -161,14 +175,16 @@ if st.session_state.choice == "Prediction":
 
         if st.button("Make Predictions..."):
             if test_dataset:
-                df = pd.read_csv(test_dataset, index_col=None)
+                st.session_state.df_test = pd.read_csv(test_dataset, index_col=None)
                 st.write(
                     "✅ Dataset uploaded successfully! Proceeding with prediction..."
                 )
 
                 try:
                     predictions = predict_model(
-                        best_model, data=df.drop([target], axis=1), raw_score=True
+                        best_model,
+                        data=st.session_state.df_test.drop([target], axis=1),
+                        raw_score=True,
                     )
                     st.success("Prediction completed on the uploaded dataset!")
                     st.dataframe(predictions)  # Display predictions
@@ -199,16 +215,20 @@ if st.session_state.choice == "Prediction":
 if st.session_state.choice == "Download Model":
     st.header("📥 Download Your Best Model")
     st.info(
-        "The best model has been saved during training, and you can download it directly. "
+        "The best model will be saved during training, and you will be able to download it directly. "
         "Alternatively, you can finalize another model for download. The model will be saved as a pickle file."
     )
 
-    if os.path.exists("best_model.pkl"):
-        with open("best_model.pkl", "rb") as f:
-            st.success("The best model is ready for download!")
-            st.download_button("Download the Best Model", f, "best_model.pkl")
+    if "best_model" in st.session_state:
+        with st.spinner("Preparing your best model for download..."):
+            save_model(st.session_state["best_model"], "best_model.pkl")
+            with open("best_model.pkl", "rb") as f:
+                st.success("The best model is ready for download!")
+                st.download_button("Download the Best Model", f, "best_model.pkl")
     else:
-        st.warning("Please train a model first to enable downloading.")
+        st.warning(
+            "⚠️ No model available for download. Please go to the **ML Training** section to train your models first."
+        )
 
     st.subheader("🔧 Finalize Another Model")
     model_id = st.text_input("Enter the Model ID you wish to finalize:")
@@ -225,4 +245,4 @@ if st.session_state.choice == "Download Model":
                         )
                         st.download_button("Download Finalized Model", f, "model.pkl")
         except:
-            st.error("Please enter a valid model ID.")
+            st.error("Please enter a valid model ID or Train the Models first.")

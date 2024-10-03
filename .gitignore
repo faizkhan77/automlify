@@ -8,6 +8,8 @@ best_model.pkl
 
 finalized_model.pkl
 
+*.pkl
+
 source_data.csv
 
 video.MP4
